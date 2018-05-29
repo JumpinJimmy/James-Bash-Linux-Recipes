@@ -1,0 +1,263 @@
+#!/bin/bash
+#######################################################################
+#            C O M M O N  P A T H S   &   E N V  V A R S
+#----------------------------------------------------------------------
+export JDEV_STYLE_NC="\033[0m"
+export JDEV_STYLE_BOLD="\033[1m"
+export JDEV_STYLE_RED="\033[0;31m"
+export JDDEVOR_NOTES_DIRNAME="JDeVore_DevNotes"
+export JDDEVOR_TODOLOG_DIRNAME="/notes/todos-worklog"
+export JDDEVOR_TASKNOTES_DIRNAME="tasks_development"
+export JDDEVOR_DEV_DIRNAME="development-workspaces"
+export JDDEVOR_UNIX_DEV_PATH="/Volumes/Unix/workspace"
+export JDDEVOR_BASH_ALIAS_FILE="/Users/jddevor/.bash_aliases"
+export JDDEVOR_BASH_PROFILE="/Users/jddevor/.bash_profile"
+export JDDEVOR_VIMRC="/Users/jddevor/.vimrc"
+export JDDEVOR_ZEDALIAS="/Users/jddevor/.zed_aliases"
+export JDDEVOR_SHELL_COMMON="/Users/jddevor/jdshell_utils/shell_common"
+export JDDEVOR_BASH_ALIAS_SRC_CTRL_NAME="jd_bash_aliases.sh"
+export JDDEVOR_BASH_PROFILE_BACKUP="jd_bash_profile_bak.sh"
+export JDDEVOR_SHELL_COMMON_BACKUP="jd_shell_common_bak.sh"
+export JDDEVOR_VIMRC_BACKUP="vimrc_bak"
+export JDDEVOR_ZEDALIAS_BACKUP="zedalias_bak.sh"
+export JDDEVOR_BASH_ALIAS_SRC_CTRL_DIR="/misc_docs/misc"
+export JDDEVOR_PERSONAL_GIT_REPOS_DIRNAME="jd-git-repos"
+export JDDEVOR_DEF_TRACKING_BRANCH="origin/mainline"
+export JDDEVOR_GIT_COMPLETION="$JRD_SHELLUTILS_DIR/git-completion.bash"
+export JDDEVOR_DEV_DESKTOP_HNAME="jddevor.aka.corp.amazon.com"
+export JDDEVOR_SUBL_USERSETTINGS="/Users/jddevor/Library/Application Support/Sublime Text 3/Packages/User"
+export JDDEVOR_SUBL_USERPREF="$JDDEVOR_SUBL_USERSETTINGS/Preferences.sublime-settings"
+export JDDEVOR_SUBL_USERSNIPS="$JDDEVOR_SUBL_USERSETTINGS/*.sublime-snippet"
+export JDDEVOR_STYLE_SPAD=$(printf '%0.1s' "-"{1..30})
+export JDDEVOR_STYLE_LPAD=$(printf '%0.1s' "-"{1..60})
+#######################################################################
+#            N O R D I C  C O L O R S
+#----------------------------------------------------------------------
+
+export NORD_SUCCESS="\e[1;32m"
+export NORD_WARNING="\e[1;33m"
+export NORD_HIGHLIGHT="\e[1;34m"
+export NORD_PURP="\e[0;35m"
+export NORD_HIGHLIGHT="\e[1;34m"
+export NORD_PRIMARY="\e[0;36m"
+export NORD_RESET="\e[0;37m"
+export NORD_BLUBLK="\e[44;30m"
+export JDEV_STYLE_NC="\033[0m"
+export JDEV_STYLE_BOLD="\033[1m"
+export JDEV_STYLE_RED="\033[0;31m"
+
+# List all global variables with prefix "JDDEVOR_" & their values
+list_globals() {
+  for global in ${!JDDEVOR_*}; do
+    val="${!global}"
+    echo -e "${JDEV_STYLE_BOLD}$global${JDEV_STYLE_NC} -->> ${val}"
+  done
+}
+
+############
+# Shell Colors
+JRDCLR_BOLD="\033[1m"
+JRDCLR_STYLE_SPAD=$(printf '%0.1s' "-"{1..30})
+JRDCLR_STYLE_LPAD=$(printf '%0.1s' "-"{1..60})
+JRDCLR_GREEN="\033[0;32m"
+JRDCLR_RED="\033[0;31m"
+JRDCLR_NC="\033[0m"
+
+# Associative zsh array for NORDIC colors
+display_nord_clr() {
+    declare -A color_assoc; # associative array a[variable_name]=ansi_color_value
+    local color_string="" # final string to display
+    for envvar in ${!NORD_*}; do
+        ansi_color_value="${!envvar}"
+        color_assoc[$envvar]="$ansi_color_value"
+    done
+    # print associative array without style
+    for K in "${!color_assoc[@]}"; do
+        echo "$K --- ${color_assoc[$K]}\n" ;
+        color_string="$color_string ${color_assoc[$K]}$K${NORD_RESET}"
+    done
+    # display stylized result
+    echo -e "$color_string"
+
+    # cleanup
+    unset -v color_assoc
+    unset ansi_color_value
+    unset variable_name
+    unset color_list
+}
+
+#######################################################################
+#                 G I T   H E L P E R   U T I L S
+#----------------------------------------------------------------------
+check_isgit() {
+  local targ_directory=$1
+  if git -C ${targ_directory} rev-parse; then
+    echo "This is a git repo"
+    return 0
+  else
+    return 1
+  fi
+}
+
+search_untracked() {
+  local git_repo=$1
+  cd ${git_repo}
+  if [[ `git status --porcelain` ]]; then
+    echo "Repository: $git_repo has changes"
+    git status
+    return 0
+  else
+    echo "Repository: $git_repo has no changes"
+    return 1
+  fi
+}
+
+commit_changes() {
+  local git_repo=$1
+  local commitmessage="x"
+  local push_changes="n"
+  pushd ${git_repo}
+  git add .
+  echo -n 'Commit message: '
+  commitmessage="$(ruby -e "puts gets")"
+  git commit -m "$commitmessage"
+  echo -e "Do you want to PUSH the changes?? (y or n):"
+  push_changes="$(ruby -e "puts gets")"
+  case "$push_changes" in
+    T|t|Y|y|1) git push;;
+    *) echo "No changes will be PUSHED";;
+  esac
+  popd
+  return
+}
+
+#######################################################################
+#                 M I S C   H E L P E R   U T I L S
+#----------------------------------------------------------------------
+# see your most used commands
+function used() {
+  if [ $1 ]
+  then
+      history | awk '{print $4}' | sort | uniq -c | sort -nr | head -n $1
+  else
+      history | awk '{print $4}' | sort | uniq -c | sort -nr | head -n 10
+  fi
+}
+
+function goto(){ [ -d "$1" ] && cd "$1" || cd "$(dirname "$1")"; }
+
+##############################################
+# display a cool but useless clock
+function clock() {
+  while true; do
+    clear;
+    echo "";
+    echo "    $(date +%r)";
+    echo "";
+    sleep 1;
+  done
+}
+
+##############################################
+# "repeat" command
+#  Example: repeat 10 echo foo
+function repeat() {
+    local count="$1" i;
+    shift;
+    for i in $(seq 1 "$count");
+    do
+        eval "$@";
+    done
+}
+
+##############################################
+# Subfunction needed by `repeat'.
+seq() {
+    local lower upper output;
+    lower=$1 upper=$2;
+
+    if [ $lower -ge $upper ]; then return; fi
+    while [ $lower -le $upper ];
+    do
+    echo -n "$lower "
+        lower=$(($lower + 1))
+    done
+    echo "$lower"
+}
+
+##############################################
+# compile cpp prog with output name $1-bin
+function cppcomp() {
+    outputname=$(echo $1 | tr -s '.' '-')
+    bin="-bin"
+    g++ -g -Wall -std=c++0x $1 -o $outputname${bin}
+}
+
+function incognito() {
+  case $1 in
+    start)
+    set +o history;;
+    stop)
+    set -o history;;
+    *)
+    echo -e "USAGE:
+    incognito start - disable command history.
+    incognito stop - enable command history."};;
+  esac
+}
+
+# Simple Yes or No Prompt
+asksure() {
+    if [ $# -ne 1 ]; then echo "wrong args."; return; fi
+    local raise_question=$1
+    local answer=""
+    local retval=0
+    echo -ne "$raise_question (Y/N)"
+    answer="$(ruby -e "puts gets")"
+    case "$answer" in
+        Y|y) retval=0;;
+        N|n) retval=1;;
+        *) echo -e "unrecognized option"; return 1;;
+    esac
+
+    echo # just a final linefeed,
+    return $retval
+}
+
+# Print a Pretty Banner
+print_banner() {
+    echo -e "\n${JDDEVOR_STYLE_LPAD}\n${JDDEVOR_STYLE_SPAD}"
+    echo -e $1
+    echo -e "${JDDEVOR_STYLE_SPAD}\n${JDDEVOR_STYLE_LPAD}"
+}
+
+#######################################################################
+#                  A R C H I V E  A L I A S E S
+#----------------------------------------------------------------------
+# make a tar, gzipped or tar.bz2 archive
+function mktar(){ tar cvf  "${1%%/}.tar"     "${1%%/}/"; }
+function mktgz(){ tar cvzf "${1%%/}.tar.gz"  "${1%%/}/"; }
+function mktbz(){ tar cvjf "${1%%/}.tar.bz2" "${1%%/}/"; }
+
+##############################################
+# Extract an archive
+function extract() {
+  if [ -f $1 ]; then
+    case $1 in
+      *.tar.bz2)   tar xjf $1        ;;
+      *.tar.gz)    tar xzf $1     ;;
+      *.bz2)       bunzip2 $1       ;;
+      *.rar)       unrar e $1     ;;
+      *.gz)        gunzip $1     ;;
+      *.tar)       tar xf $1        ;;
+      *.tbz2)      tar xjvf $1      ;;
+      *.tgz)       tar xzvf $1       ;;
+      *.zip)       unzip $1     ;;
+      *.Z)         uncompress $1  ;;
+      *.7z)        7z x $1    ;;
+      *)           echo "'$1' cannot be extracted via extract()" ;;
+    esac
+  else
+    echo "'$1' is not a valid file"
+  fi
+}

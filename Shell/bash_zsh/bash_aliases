@@ -1,0 +1,153 @@
+#######################################################################
+#                G E N E R A L   A L I A S E S
+#----------------------------------------------------------------------
+# see ~/.bash_aliases file for JRD_SHELLUTILS_DIR value
+alias path='echo -e ${PATH//:/\\n}' # clean path printing
+alias rebash='source ~/.bash_profile' # source bash_profile for updates
+alias h='history'
+alias myip="ifconfig | grep 'inet addr'" # list active inet addresses
+alias ltt="ls -lta" # list by time
+alias lsa="ls -la"
+alias ll="ls -lS" # list by size
+alias lsl="ls -lSr" # list by reverse size
+alias lx='ls -lhBX' # list by extension
+alias lt='ls -lhrt' # list by date
+alias tf='tail -f' # follow a file
+alias cpr='cp -r' # recursive copy
+alias mvv='mv -v' # move verbose
+alias h?="history | grep "
+alias ffind='find -type f -name' # find file name
+alias lsd='find . -maxdepth 1 -type d | sort' #list directories in sorted order
+alias chux='chmod u+x' # add exec permission current user for file
+alias bashprof='subl ~/.bash_profile && source ~/.bash_profile' # open bashrc file in sublime and source
+alias edalias='subl ~/.bash_aliases'
+alias lsm='ls -lAhG --color=auto'
+alias cls='clear;lsm'
+alias mac-hname="scutil --get HostName"
+alias ..="cd ../"
+alias cdd="cd ../"
+alias cd..="cd ../"
+alias ...="cd ../../"
+alias ....="cd ../../../"
+alias .....="cd ../../../../"
+alias .4='cd ../../../../'
+alias .5='cd ../../../../../'
+alias -- -='cd -' # goto previous dir
+
+# Recursively Remove stupid .DS_Store files
+alias cleanup="find . -type f -name '*.DS_Store' -ls -delete"
+
+# Lock the screen (when going AFK)
+alias afk="/System/Library/CoreServices/Menu\ Extras/User.menu/Contents/Resources/CGSession -suspend"
+
+# Empty the Trash on all mounted volumes and the main HDD.
+# Also, clear Apple’s System Logs to improve shell startup speed.
+# Finally, clear download history from quarantine. https://mths.be/bum
+alias emptytrash="sudo rm -rfv /Volumes/*/.Trashes; sudo rm -rfv ~/.Trash; sudo rm -rfv /private/var/log/asl/*.asl; sqlite3 ~/Library/Preferences/com.apple.LaunchServices.QuarantineEventsV* 'delete from LSQuarantineEvent'"
+
+##############################################
+# git commit, interactive without arg -or-
+# gic "your message"
+gic() {
+  local commitmessage
+  if [ "" = "$1" ]; then
+    echo -n 'Commit message: '
+    commitmessage="$(ruby -e "puts gets")"
+    git commit -m "$commitmessage"
+  else
+    git commit -m "$1"
+  fi
+}
+
+# checkout new branch, remote tracking defaults to mainline
+# DEF_TRACKING_BRANCH=mainline
+gnewbranch() {
+    srcbashcommon
+    local branchname=$1
+    local trackingbranch=$2
+    echo "-Tracking Branch: ${trackingbranch:=${DEF_TRACKING_BRANCH}}"
+    if [ "" = "$branchname" ]; then
+        echo -n 'branch name: '
+        branchname="$(ruby -e "puts gets")"
+    fi
+    git checkout -b "$branchname" "$trackingbranch"
+}
+
+##############################################
+# display full path for requested directory
+# Copy to result to clipboard
+print_path() {
+    srcbashcommon # source common shell utils file
+    local requested_dir="x"
+    local result_dir="all"
+    local resulting_path="x"
+    local custom_path=0
+
+    if [ "" = "$1" ]; then
+        echo -e 'Which Path do you want displayed? \n (A = JDNotes, B = DevelopmentWS, C = Documents, P = Personal Git, X = CUSTOM): '
+        requested_dir="$(ruby -e "puts gets")"
+        echo "requested_dir: $requested_dir"
+    else
+        requested_dir="$1"
+        echo "requested_dir: $requested_dir"
+    fi
+
+    case "$requested_dir" in
+        A|a) result_dir="$JDDEVOR_NOTES_DIRNAME";;
+        B|b) result_dir="$JDDEVOR_DEV_DIRNAME";;
+        C|c) result_dir="Documents";;
+        P|p) result_dir="$JDDEVOR_PERSONAL_GIT_REPOS_DIRNAME";;
+        X|x) result_dir="custom"; ((custom_path++));;
+        *) echo "No Directory Provided. Listing All"; result_dir="All"; return;;
+    esac
+
+    if ((custom_path > 0)); then
+        echo -n '[CUSTOM]:Please Provide Desired Directory Name:'
+        requested_dir="$(ruby -e "puts gets")"
+        if [[ -z $requested_dir ]]; then
+            echo "Cannot search for empty directory name... Exiting"
+            return
+        fi
+        sanitized_dir=${requested_dir// /} # strip space
+        sanitized_dir=${requested_dir//_/} # strip underscore
+        sanitized_dir=${sanitized_dir//[^a-zA-Z0-9_]/} # strip non alphanumeric & underscores
+        result_dir="${sanitized_dir}"
+        echo "Requested Dir after Sanitization = $result_dir"
+
+        if [[ -z $requested_dir ]]; then
+            echo "String Sanitize resulted in empty request. Please provide valid dirname... Exiting"
+            return
+        fi
+    fi
+    resulting_path=$(mdfind kind:folder $result_dir)
+    result_quantity=$(echo "$resulting_path" | wc -l)
+    if ((result_quantity > 1)); then
+        if ! asksure "Multiple Results returned! Do you want to display them?"; then echo "Okay, exiting"; return; fi
+        resultarray=()
+        IFS=$'\n' read -d '' -ra resultarray <<< "$resulting_path"
+        resultarry_size=${#resultarray[@]}
+        echo -e "${JDEV_STYLE_RED}RESULTING PATH(s):${JDEV_STYLE_NC}"
+        local loopctr=0
+        for respath in "${resultarray[@]}"; do
+            echo -e " ($loopctr)--> $respath"
+            ((loopctr++))
+        done
+
+        if ! asksure "Do You want to Copy one to the clipboard?"; then echo "Okay, exiting"; return; fi
+        echo -ne "Okay which index? "
+        result_selection="$(ruby -e "puts gets")"
+        if ((result_selection >= 0)) && ((result_selection < resultarry_size)); then
+            resulting_path=${resultarray[$result_selection]}
+        else
+            echo "Invalid Selection; Exiting"
+            return
+        fi
+    fi
+    if [[ -e $resulting_path ]]; then
+
+        echo -e "${JDEV_STYLE_RED}RESULT:${JDEV_STYLE_NC} \"$resulting_path \" \n ${JDEV_STYLE_BOLD} ${JDEV_STYLE_RED} Copied to your clipboard ${JDEV_STYLE_NC}"
+        echo "$resulting_path" | pbcopy # copy path to clipboad
+        return
+    fi
+    echo -e "Directory does not exist!"
+}

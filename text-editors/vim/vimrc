@@ -1,0 +1,31 @@
+call plug#begin('~/.vim/plugged')
+Plug 'arcticicestudio/nord-vim'
+Plug 'rbgrouleff/bclose.vim'
+Plug 'ctrlpvim/ctrlp.vim'
+Plug 'vim-airline/vim-airline'
+Plug 'vim-airline/vim-airline-themes'
+call plug#end()
+set number
+set nobackup
+set nowritebackup
+set noswapfile
+set fileformats=unix,dos,mac
+set clipboard=unnamed
+colorscheme nord
+let g:nord_italic = 1
+let mapleader = ','
+let g:ctrlp_map = '<C-p>'
+let g:ctrlp_cmd = 'CtrlP'
+let g:ctrlp_custom_ignore = '\.git$\|\.hg$\|\.svn$'
+let g:ctrlp_working_path_mode = ''
+let g:airline#extensions#tabline#enabled = 1
+let g:airline#extensions#tabline#show_close_button = 1
+let g:airline#extensions#tabline#close_symbol = 'X'
+nnoremap <C-n> :bnext<CR>
+nnoremap <C-b> :bprevious<CR>
+nnoremap <silent> <Leader>bd :Bclose<CR>
+nnoremap <Leader>sv :source ~/.vimrc<CR>
+nnoremap <Leader>ev :e ~/.vimrc<CR>
+noremap <Leader>pi :PlugInstall<CR>
+noremap <Leader>pu :PlugUpgrade<CR>
+noremap <Leader>pc :PlugClean<CR>

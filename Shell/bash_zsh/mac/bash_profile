@@ -1,0 +1,85 @@
+# James DeVore Bash Profile
+#############################
+# BASH VERSION INFORMATION!!!
+# # Add the new shell to the list of allowed shells
+# sudo bash -c 'echo /usr/local/bin/bash >> /etc/shells'
+# # Change to the new shell
+# chsh -s /usr/local/bin/bash
+#http://clubmate.fi/upgrade-to-bash-4-in-mac-os-x/
+#-------------------------------
+export PATH="$PATH":~/bin
+# alias vim="/usr/local/bin/vim -X"
+#############################
+# Environment Variables
+export EDITOR='subl -w'
+export HISTSIZE='32768';
+export HISTFILESIZE="${HISTSIZE}";
+export JRD_SHELLUTILS_DIR="$HOME/jdshell_utils"
+export CLICOLOR=1
+#############################
+# Java Stuff....
+# export JAVA_HOME="/Library/Java/JavaVirtualMachines/jdk1.8.0_131.jdk/Contents/Home"
+# export JAVA_HOME=$(/usr/libexec/java_home)
+
+#############################
+# Command prompt colors
+prompt_colors() {
+  #default
+  PS1='\[\e[1;38;5;203m\]\u\[\e[0m\]\[\e[0;37m\]@\h\[\e[0m\]\[\e[00;37m\]:\[\e[0;38;5;203m\]\w \[\e[0m\]\[\e[01;37m\]\n$>\[\e[0m\]'
+}
+
+nord_prompt() {
+  PS1="${NORD_SUCCESS}\u${NORD_RESET}@${NORD_WARNING}\h${NORD_RESET}:${NORD_PRIMARY}\w${NORD_RESET}\n$>"
+}
+
+#############################
+# Load Bash Utils & Aliases
+if [ -f ~/.bash_aliases ]; then
+    echo "bash aliases sourced"
+    . ~/.bash_aliases
+fi
+srcbashcommon || (echo "Alias srcbashcommon failed. Does ${JRD_SHELLUTILS_DIR}/shell_common exist?";)
+source "${JDDEVOR_GIT_COMPLETION}" || (echo "Failed to Source Git Completion File: ${JDDEVOR_GIT_COMPLETION}. Does it exist?";)
+
+nord_prompt # USE NORDIC Colors defined in shell_common
+
+# bash completion
+if [ -f $(brew --prefix)/etc/bash_completion ]; then
+  echo "bash completion init"
+  . $(brew --prefix)/etc/bash_completion
+fi
+
+#############################
+# Ruby Setup https://w.amazon.com/index.php/User:Yatem/OSX_Setup#Ruby
+if which rbenv > /dev/null; then eval "$(rbenv init -)"; fi
+
+pyenvinit() {
+  if command -v pyenv 1>/dev/null 2>&1; then
+    echo "pyenv initialized"
+    eval "$(pyenv init -)"
+  fi
+  export PYENV_ROOT="$HOME/.pyenv"
+}
+
+# Enable Anaconda Python
+ana() {
+  echo "Anaconda ON"
+  python_location=$(which python)
+  if [ "$python_location" != "/Users/jddevor/anaconda3/bin/python" ]; then
+    export OLDPATH=$PATH
+    echo -e "OLDPATH: \n $OLDPATH"
+    export PATH="/Users/jddevor/anaconda3/bin:$PATH"
+  fi
+}
+
+# Disable Anaconda Python
+deana() {
+  echo "Anaconda OFF"
+  python_location=$(which python)
+  if [ "$python_location" == "/Users/jddevor/anaconda3/bin/python"  ]; then
+    export PATH=$OLDPATH
+  fi
+}
+
+# Soccer CLI Token
+# https://github.com/JumpinJimmy/soccer-cli
