@@ -151,3 +151,42 @@ print_path() {
     fi
     echo -e "Directory does not exist!"
 }
+
+repo_listing() {
+    srcbashcommon
+    local repository_count=0
+    local username="$GITHUB_USERNAME"
+    local token_file="$FILE_PATH/$JDDEVOR_GIT_TOKEN"
+    local repository_list=""
+
+    if [ ! -e $token_file ]; then
+        echo -e "${NORD_ERROR}Cannot Find file:${NORD_SUCCESS}$token_file${NORD_RESET}";
+    fi
+
+    local toke_value="$(<$token_file)"
+    repository_count=$(curl -XGET -s https://"${username}":"${toke_value}"@api.github.com/users/"${username}" | jq -c --raw-output ".public_repos")
+    echo -e "${NORD_PRIMARY}$username${NORD_RESET} Repository Count: ${NORD_SUCCESS}$repository_count${NORD_RESET}"
+    # testoutput=$(curl -XGET -s https://"${username}":"${toke_value}"@api.github.com/users/"${username}" | jq -c --raw-output '.' | cat)
+    # echo $testoutput > testoutput-json.txt
+
+    if asksure "${NORD_WARNING}Retrieve Repository List?${NORD_RESET}"; then
+        echo -e "${NORD_PRIMARY}Okay fetching repos${NORD_RESET}";
+        repository_list=$(curl -XGET -s https://"${username}":"${toke_value}"@api.github.com/users/"${username}"/repos?per_page="${repository_count}" | jq -c --raw-output ".[].name")
+
+        for repository in ${repository_list}; do
+            echo -e "Repo: ${NORD_PRIMARY}${repository}${NORD_RESET}"
+        done
+    else
+        echo -e "${NORD_PRIMARY}Finished${NORD_RESET}";
+    fi
+    #     for repository in ${repositories}; do
+    #     echo "Cloning ${repository}..."
+    #     git clone --quiet "${repository}"
+    # done
+    #  clone starred https://github.com/RomaniukVadim/backup-my-github/blob/master/backup.sh
+    #     for repository in ${repositories}; do
+    #     echo "Downloading ${repository}.tar.gz..."
+    #     curl -L -s -o ${repository}.tar.gz https://github.com/${GITHUB_USERNAME}/${repository}/archive/master.tar.gz
+    # done
+    # repository_list_ssh=$(curl -XGET -s https://"${username}":"${toke_value}"@api.github.com/users/"${username}"/repos?per_page="${repository_count}" | jq -c --raw-output ".[].ssh_url")
+}
